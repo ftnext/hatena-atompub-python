@@ -1,3 +1,4 @@
+import argparse
 from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
@@ -73,13 +74,27 @@ def return_contents(entry):
 
 
 if __name__ == "__main__":
-    user_pass_tuple = load_credentials("nikkie-ftnext")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("hatena_id")
+    parser.add_argument("blog_domain")
+    parser.add_argument("target_year", type=int)
+    parser.add_argument("--output", type=Path)
+    args = parser.parse_args()
 
-    blog_entries_url = "https://blog.hatena.ne.jp/nikkie-ftnext/nikkie-ftnext.hatenablog.com/atom/entry"
+    hatena_id = args.hatena_id
+    blog_domain = args.blog_domain
+    target_year = args.target_year
+    output_path = args.output if args.output else Path("output")
+
+    user_pass_tuple = load_credentials(hatena_id)
+
+    blog_entries_url = (
+        f"https://blog.hatena.ne.jp/{hatena_id}/{blog_domain}/atom/entry"
+    )
 
     jst_tz = timezone(timedelta(seconds=32400))
-    date_range_start = datetime(2019, 1, 1, tzinfo=jst_tz)
-    date_range_end = datetime(2020, 1, 1, tzinfo=jst_tz)
+    date_range_start = datetime(target_year, 1, 1, tzinfo=jst_tz)
+    date_range_end = datetime(target_year + 1, 1, 1, tzinfo=jst_tz)
 
     oldest_published_date = datetime.now(jst_tz)
     target_entries = []
@@ -108,8 +123,7 @@ if __name__ == "__main__":
                 target_entries.append(entry)
         print(f"{oldest_published_date}までの記事を取得（全{len(target_entries)}件）")
 
-    output_path = Path("entries_2019")
-    output_path.mkdir(exist_ok=True)
+    output_path.mkdir(parents=True, exist_ok=True)
 
     for entry in target_entries:
         id_ = return_id(entry)
