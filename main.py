@@ -15,9 +15,9 @@ def load_credentials(username):
     return (username, auth_token)
 
 
-def retrieve_hatena_blog_entries(blog_entries_url, user_pass_tuple):
+def retrieve_hatena_blog_entries(blog_entries_uri, user_pass_tuple):
     """はてなブログAPIにGETアクセスし、記事一覧を表すXMLを文字列で返す"""
-    r = requests.get(blog_entries_url, auth=user_pass_tuple)
+    r = requests.get(blog_entries_uri, auth=user_pass_tuple)
     return r.text
 
 
@@ -26,7 +26,7 @@ def select_elements_of_tag(xml_root, tag):
     return xml_root.findall(tag)
 
 
-def return_next_entry_list_url(links):
+def return_next_entry_list_uri(links):
     """続くブログ記事一覧のエンドポイントを返す"""
     for link in links:
         if link.attrib["rel"] == "next":
@@ -88,11 +88,11 @@ if __name__ == "__main__":
 
     user_pass_tuple = load_credentials(hatena_id)
 
-    blog_entries_url = (
+    blog_entries_uri = (
         f"https://blog.hatena.ne.jp/{hatena_id}/{blog_domain}/atom/entry"
     )
 
-    jst_tz = timezone(timedelta(seconds=32400))
+    jst_tz = timezone(timedelta(seconds=9 * 60 * 60))
     date_range_start = datetime(target_year, 1, 1, tzinfo=jst_tz)
     date_range_end = datetime(target_year + 1, 1, 1, tzinfo=jst_tz)
 
@@ -101,14 +101,14 @@ if __name__ == "__main__":
 
     while date_range_start <= oldest_published_date:
         entries_xml = retrieve_hatena_blog_entries(
-            blog_entries_url, user_pass_tuple
+            blog_entries_uri, user_pass_tuple
         )
         root = ET.fromstring(entries_xml)
 
         links = select_elements_of_tag(
             root, "{http://www.w3.org/2005/Atom}link"
         )
-        blog_entries_url = return_next_entry_list_url(links)
+        blog_entries_uri = return_next_entry_list_uri(links)
 
         entries = select_elements_of_tag(
             root, "{http://www.w3.org/2005/Atom}entry"
